@@ -1,64 +1,53 @@
+import os.path
 import pandas as pd
 
 
 class Comparer:
     percentage_format = '{:+.2f}%'
 
-    def __init__(self, threshold, current, baseline, previous=None):
+    def __init__(self, threshold, current, previous):
         self.threshold = threshold
         self.current = current
-        self.baseline = baseline
         self.previous = previous
         self.tables = []
+        self.aggregated_results = None
+        self.aggregated_diff = pd.Series(dtype=float)
 
     def compare(self, column_name):
         current_df = pd.read_csv(self.current)
-        baseline_df = pd.read_csv(self.baseline)
 
-        current_to_baseline_df = pd.merge(
-            current_df,
-            baseline_df,
-            on=['Type', 'Name'],
-            how='outer',
-            suffixes=('_current', '_baseline')
-        )
+        self.aggregated_results = current_df[['Type', 'Name', column_name]].rename(columns={f'{column_name}': 'Current'})
 
-        baseline_comparison = current_to_baseline_df[['Type', 'Name', f'{column_name}_baseline', f'{column_name}_current']]
-        baseline = baseline_comparison.rename(columns={f'{column_name}_baseline': 'Baseline', f'{column_name}_current': 'Current'})
-        baseline_diff = ((baseline['Current'] / baseline['Baseline']) * 100) - 100
+        for report in self.previous:
+            previous_df = pd.read_csv(report)
+            file_prefix = os.path.basename(report).split('_')[0].capitalize()
 
-        if self.previous is not None:
-            previous_df = pd.read_csv(self.previous)
-
-            current_to_previous_df = pd.merge(
+            merged_df = pd.merge(
                 current_df,
                 previous_df,
                 on=['Type', 'Name'],
                 how='outer',
-                suffixes=('_current', '_previous')
+                suffixes=('_current', f'_{file_prefix}')
             )
 
-            previous_comparison = current_to_previous_df[['Type', 'Name', f'{column_name}_previous', f'{column_name}_current']]
-            previous = previous_comparison.rename(columns={f'{column_name}_previous': 'Previous', f'{column_name}_current': 'Current'})
-            previous_diff = ((previous['Current'] / previous['Previous']) * 100) - 100
+            self.aggregated_results.insert(len(self.aggregated_results.columns), file_prefix, merged_df[f'{column_name}_{file_prefix}'])
+            diff = ((self.aggregated_results['Current'] / self.aggregated_results[file_prefix]) * 100) - 100
+            self.aggregated_diff = self.aggregated_diff.append(diff)
+            self.aggregated_results.insert(len(self.aggregated_results.columns), f'{file_prefix} Diff', diff)
 
-        # baseline_and_previous = pd.concat([baseline_comparison, previous_comparison], axis=1)
-        baseline_and_previous = baseline
-        baseline_and_previous.insert(len(baseline.columns), 'Previous', previous['Previous'])
-        compared_columns = baseline_and_previous[['Type', 'Name', 'Baseline', 'Previous', 'Current']]
-        compared_columns.insert(len(compared_columns.columns), 'Baseline Diff', baseline_diff)
-        compared_columns.insert(len(compared_columns.columns), 'Previous Diff', previous_diff)
-        results = compared_columns.style.format({
-            'Baseline Diff': self.percentage_format.format,
-            'Previous Diff': self.percentage_format.format
-        })
+        results = self.aggregated_results.style.format(
+            {
+                'Baseline Diff': self.percentage_format.format,
+                'Previous Diff': self.percentage_format.format
+            },
+            na_rep='NaN',
+            precision=2
+        )
+
         results.applymap(lambda x: 'color: red' if (x > self.threshold) else None, subset=['Baseline Diff', 'Previous Diff'])
         self.tables.append(dict(title=column_name, body=results.render()))
 
-        comparison_table_string = compared_columns.to_string(formatters={"Diff": self.percentage_format.format})
-
+        comparison_table_string = self.aggregated_results.to_string(formatters={"Diff": self.percentage_format.format})
         print(f'Comparison for {column_name} column:\n {comparison_table_string}\n\n')
 
-        merged_diff = baseline_diff.append(previous_diff)
-
-        return merged_diff.add_prefix(f'({column_name})_')
+        return self.aggregated_diff.add_prefix(f'({column_name})_')

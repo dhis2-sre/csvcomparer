@@ -1,8 +1,3 @@
-"""
-TODO:
--
-"""
-
 import argparse
 import pandas as pd
 from .compare import Comparer
@@ -19,21 +14,15 @@ def main():
         '--current',
         required=True,
         type=str,
-        help='Current csv report file to compare with.'
-    )
-
-    parser.add_argument(
-        '--baseline',
-        required=True,
-        type=str,
-        help='Baseline csv report file to compare to.'
+        help='Current csv report file name to compare with.'
     )
 
     parser.add_argument(
         '--previous',
-        required=False,
+        nargs='+',
+        required=True,
         type=str,
-        help='Previous csv report file to compare to.'
+        help='Previous csv report file name/s to compare to, prefixed with a "string_" (ex. baseline_stats.csv).'
     )
 
     parser.add_argument(
@@ -47,8 +36,8 @@ def main():
         '--threshold',
         required=False,
         type=float,
-        default=1.0,
-        help='The allowed threshold factor of difference (default: %(default)s).'
+        default=0,
+        help='The allowed threshold percentage of difference (default: %(default)s).'
     )
 
     parser.add_argument(
@@ -61,8 +50,8 @@ def main():
 
     args = parser.parse_args()
 
-    comparer = Comparer(args.threshold, args.current, args.baseline, args.previous)
-    diff = pd.Series([], dtype=float)
+    comparer = Comparer(args.threshold, args.current, args.previous)
+    diff = pd.Series(dtype=float)
 
     for column in args.column_name.split(';'):
         diff = diff.append(comparer.compare(column))
