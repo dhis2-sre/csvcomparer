@@ -16,13 +16,24 @@ def main():
     )
 
     parser.add_argument(
-        'previous',
-        help='Previous csv report file to compare to.'
+        '--current',
+        required=True,
+        type=str,
+        help='Current csv report file to compare with.'
     )
 
     parser.add_argument(
-        'current',
-        help='Current csv report file to compare with.'
+        '--baseline',
+        required=True,
+        type=str,
+        help='Baseline csv report file to compare to.'
+    )
+
+    parser.add_argument(
+        '--previous',
+        required=False,
+        type=str,
+        help='Previous csv report file to compare to.'
     )
 
     parser.add_argument(
@@ -50,7 +61,7 @@ def main():
 
     args = parser.parse_args()
 
-    comparer = Comparer(args.previous, args.current, args.threshold)
+    comparer = Comparer(args.threshold, args.current, args.baseline, args.previous)
     diff = pd.Series([], dtype=float)
 
     for column in args.column_name.split(';'):
