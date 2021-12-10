@@ -1,5 +1,7 @@
 import argparse
+import logging
 import pandas as pd
+
 from .compare import Comparer
 from .validate import Validator
 from .report import Reporter
@@ -8,6 +10,12 @@ from .report import Reporter
 def main():
     parser = argparse.ArgumentParser(
         description='Compare previous Locust run csv report with the current one.'
+    )
+
+    parser.add_argument(
+        '--loglevel',
+        default='error',
+        help='Logging level. (default: %(default)s)'
     )
 
     parser.add_argument(
@@ -22,7 +30,7 @@ def main():
         nargs='+',
         required=True,
         type=str,
-        help='Previous csv report file name/s to compare to, prefixed with a "string_" (ex. baseline_stats.csv).'
+        help='Previous csv report file name/s to compare to, prefixed with a "string_". (ex. baseline_stats.csv)'
     )
 
     parser.add_argument(
@@ -37,7 +45,7 @@ def main():
         required=False,
         type=float,
         default=0,
-        help='The allowed threshold percentage of difference (default: %(default)s).'
+        help='The allowed threshold percentage of difference. (default: %(default)s)'
     )
 
     parser.add_argument(
@@ -45,10 +53,12 @@ def main():
         required=False,
         type=str,
         default='comparison-report.html',
-        help='HTML report file name (default: %(default)s).'
+        help='HTML report file name. (default: %(default)s)'
     )
 
     args = parser.parse_args()
+
+    logging.basicConfig(format='%(levelname)s:\n%(message)s', level=args.loglevel.upper())
 
     comparer = Comparer(args.threshold, args.current, args.previous)
     diff = pd.Series(dtype=float)
