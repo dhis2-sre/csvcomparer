@@ -6,7 +6,7 @@ from .validate import Validator
 from .report import Reporter
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='Compare previous Locust run csv report with the current one.'
     )

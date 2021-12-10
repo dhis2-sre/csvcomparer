@@ -4,7 +4,7 @@ import pandas as pd
 
 
 class Comparer:
-    def __init__(self, threshold, current, previous):
+    def __init__(self, threshold: float, current: str, previous: str) -> None:
         self.threshold = threshold
         self.current = current
         self.previous = previous
@@ -15,12 +15,12 @@ class Comparer:
 
         pd.set_option('precision', 2)
 
-    def _build_comparison_tables(self, current, previous, column_name):
-        self.file_prefix = os.path.basename(previous).split('_')[0].capitalize()
+    def _build_comparison_tables(self, current_df: pd.DataFrame, report: str, column_name: str) -> None:
+        self.file_prefix = os.path.basename(report).split('_')[0].capitalize()
 
         merged_df = pd.merge(
-            current,
-            pd.read_csv(previous),
+            current_df,
+            pd.read_csv(report),
             on=['Type', 'Name'],
             how='outer',
             suffixes=('_current', f'_{self.file_prefix}')
@@ -32,7 +32,7 @@ class Comparer:
             merged_df[f'{column_name}_{self.file_prefix}']
         )
 
-    def compare(self, column_name):
+    def compare(self, column_name: str) -> None:
         current_df = pd.read_csv(self.current)
 
         self.aggregated_results = current_df[['Type', 'Name', column_name]].rename(
