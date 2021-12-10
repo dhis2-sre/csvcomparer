@@ -1,3 +1,4 @@
+import logging
 import os.path
 import pandas as pd
 
@@ -46,9 +47,7 @@ class Comparer:
 
         diff_columns = [col for col in self.aggregated_results.columns.values if 'Diff' in col]
 
-        columns_format = {}
-        for col in diff_columns:
-            columns_format[col] = self.percentage_format
+        columns_format = {col: self.percentage_format for col in diff_columns}
 
         styled_results = self.aggregated_results.style.format(columns_format, na_rep='NaN')
         styled_results.applymap(lambda x: 'color: red' if (x > self.threshold) else None, subset=diff_columns)
@@ -56,6 +55,6 @@ class Comparer:
         self.tables.append(dict(title=column_name, body=styled_results.render()))
 
         comparison_table_string = self.aggregated_results.to_string()
-        print(f'Comparison for {column_name} column:\n {comparison_table_string}\n\n')
+        logging.info(f'Comparison for {column_name} column:\n {comparison_table_string}\n\n')
 
         return self.aggregated_diff.add_prefix(f'({column_name})_')
