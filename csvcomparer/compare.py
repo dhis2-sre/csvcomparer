@@ -49,5 +49,3 @@ class Comparer:
         self.tables.append(dict(title=column_name, body=self.aggregated_results))
 
         logging.info(f'Comparison for {column_name} column:\n {self.aggregated_results.to_string()}\n\n')
-
-        # return self.aggregated_diff.add_prefix(f'({column_name})_')
