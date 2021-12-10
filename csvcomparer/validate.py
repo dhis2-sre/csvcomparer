@@ -4,12 +4,11 @@ import pandas as pd
 
 
 class Validator:
-    def __init__(self, comparer, results):
+    def __init__(self, comparer):
         self.comparer = comparer
-        self.results = results
 
     def _filter_null_results(self):
-        return list(filter(pd.notnull, self.results))
+        return list(filter(pd.notnull, self.comparer.aggregated_diff))
 
     def _all_results_below_threshold(self, results):
         return all(result <= self.comparer.threshold for result in results)
@@ -19,8 +18,6 @@ class Validator:
 
     def validate(self):
         logging.info(f'Allowed threshold: {self.comparer.threshold}\n')
-
-        logging.info(self.results)
 
         filtered_results = self._filter_null_results()
 

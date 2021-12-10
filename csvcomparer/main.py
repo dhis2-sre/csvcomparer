@@ -1,6 +1,5 @@
 import argparse
 import logging
-import pandas as pd
 
 from .compare import Comparer
 from .validate import Validator
@@ -61,15 +60,14 @@ def main():
     logging.basicConfig(format='%(levelname)s:\n%(message)s', level=args.loglevel.upper())
 
     comparer = Comparer(args.threshold, args.current, args.previous)
-    diff = pd.Series(dtype=float)
 
     for column in args.column_name.split(';'):
-        diff = diff.append(comparer.compare(column))
+        comparer.compare(column)
 
     reporter = Reporter(comparer, args.output)
     reporter.render()
 
-    validator = Validator(comparer, diff)
+    validator = Validator(comparer)
     validator.validate()
 
 
