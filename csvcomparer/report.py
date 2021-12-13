@@ -10,8 +10,13 @@ class Reporter:
         self.comparer = comparer
         self.output_file = output_file
 
-    def _highlight_regression(self, value: float) -> Optional[str]:
-        return 'color: red' if (value > self.comparer.threshold) else None
+    def _highlight_diff(self, value: float) -> Optional[str]:
+        if value > self.comparer.threshold:
+            return 'background-color: coral'
+        elif value < self.comparer.threshold:
+            return 'background-color: darkseagreen'
+        else:
+            return None
 
     def _apply_styles(self) -> None:
         diff_columns = [col for col in self.comparer.aggregated_results.columns.values if 'Diff' in col]
@@ -19,8 +24,8 @@ class Reporter:
         columns_format = {col: self.percentage_format for col in diff_columns}
 
         for table in self.comparer.tables:
-            table.update((k, v.style.format(columns_format, na_rep='NaN')) for k, v in table.items() if k == 'body')
-            table.update((k, v.applymap(self._highlight_regression, subset=diff_columns).render()) for k, v in table.items() if k == 'body')
+            table['body'] = table['body'].style.format(columns_format, na_rep='NaN')
+            table['body'] = table['body'].applymap(self._highlight_diff, subset=diff_columns).render()
 
     def render(self) -> None:
         self._apply_styles()
