@@ -3,11 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <title>Comparison report</title>
+    <style>
+        body {
+            font-family: Helvetica, sans-serif;
+        }
+
+        table, th, td {
+            border: 1px solid black;
+            padding: 3px;
+        }
+
+        th {
+            background-color: lightgrey;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         {% for table in tables %}
-            <h2>Comparison for {{ table.title }} column</h2>
+            <h2>Comparison for "{{ table.title }}" column</h2>
             {{ table.body }}
         {% endfor %}
     </div>

@@ -9,8 +9,9 @@ class Validator:
     def __init__(self, comparer: Comparer) -> None:
         self.comparer = comparer
 
-    def _filter_null_results(self) -> list:
-        return list(filter(pd.notnull, self.comparer.aggregated_diff))
+    @staticmethod
+    def _filter_null_results(results: list) -> list:
+        return list(filter(pd.notnull, results))
 
     def _all_results_below_threshold(self, results) -> bool:
         return all(result <= self.comparer.threshold for result in results)
@@ -21,7 +22,7 @@ class Validator:
     def validate(self) -> None:
         logging.info(f'Allowed threshold: {self.comparer.threshold}\n')
 
-        filtered_results = self._filter_null_results()
+        filtered_results = self._filter_null_results(self.comparer.aggregated_diff)
 
         if self._all_results_below_threshold(filtered_results):
             sys.exit()
