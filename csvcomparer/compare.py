@@ -4,10 +4,10 @@ import pandas as pd
 
 
 class Comparer:
-    def __init__(self, threshold: float, current: str, previous: str) -> None:
+    def __init__(self, threshold: float, current_report: str, previous_reports: str) -> None:
         self.threshold = threshold
-        self.current = current
-        self.previous = previous
+        self.current_report = current_report
+        self.previous_reports = previous_reports
         self.tables = []
         self.file_prefix = None
         self.aggregated_results = None
@@ -15,32 +15,26 @@ class Comparer:
 
         pd.set_option('precision', 2)
 
-    def _build_comparison_tables(self, current_df: pd.DataFrame, report: str, column_name: str) -> None:
-        self.file_prefix = os.path.basename(report).split('_')[0].capitalize()
+    def _build_comparison_tables(self, report_name: str, column_name: str) -> None:
+        previous_df = pd.read_csv(report_name)
 
-        merged_df = pd.merge(
-            current_df,
-            pd.read_csv(report),
-            on=['Type', 'Name'],
-            how='outer',
-            suffixes=('_current', f'_{self.file_prefix}')
-        )
+        self.file_prefix = os.path.basename(report_name).split('_')[0].capitalize()
 
         self.aggregated_results.insert(
             len(self.aggregated_results.columns),
             self.file_prefix,
-            merged_df[f'{column_name}_{self.file_prefix}']
+            previous_df[column_name]
         )
 
     def compare(self, column_name: str) -> None:
-        current_df = pd.read_csv(self.current)
+        current_df = pd.read_csv(self.current_report)
 
         self.aggregated_results = current_df[['Type', 'Name', column_name]].rename(
             columns={f'{column_name}': 'Current'}
         )
 
-        for report in self.previous:
-            self._build_comparison_tables(current_df, report, column_name)
+        for report_name in self.previous_reports:
+            self._build_comparison_tables(report_name, column_name)
 
             diff = ((self.aggregated_results['Current'] / self.aggregated_results[self.file_prefix]) * 100) - 100
             self.aggregated_diff = self.aggregated_diff.append(diff)
