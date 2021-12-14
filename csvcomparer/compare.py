@@ -11,7 +11,6 @@ class Comparer:
         self.tables = []
         self.file_prefix = None
         self.aggregated_results = None
-        self.aggregated_diff = pd.Series(dtype=float)
 
         pd.set_option('precision', 2)
 
@@ -26,6 +25,9 @@ class Comparer:
             previous_df[column_name]
         )
 
+    def get_comparison_tables(self) -> list[dict]:
+        return self.tables
+
     def compare(self, column_name: str) -> None:
         current_df = pd.read_csv(self.current_report)
 
@@ -33,13 +35,17 @@ class Comparer:
             columns={f'{column_name}': 'Current'}
         )
 
+        aggregated_diff = pd.Series(dtype=float)
+
         for report_name in self.previous_reports:
             self._build_comparison_tables(report_name, column_name)
 
             diff = ((self.aggregated_results['Current'] / self.aggregated_results[self.file_prefix]) * 100) - 100
-            self.aggregated_diff = self.aggregated_diff.append(diff)
+            aggregated_diff = aggregated_diff.append(diff)
             self.aggregated_results.insert(len(self.aggregated_results.columns), f'{self.file_prefix} Diff', diff)
 
         self.tables.append(dict(title=column_name, body=self.aggregated_results))
 
         logging.info(f'Comparison for {column_name} column:\n {self.aggregated_results.to_string()}\n\n')
+
+        return aggregated_diff
