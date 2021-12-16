@@ -40,7 +40,7 @@ csvcomparer \
 csvcomparer --help
 ```
 
-## Contributing
+## Development setup
 
 To have a development friendly setup - create a virtual Python environment and install in `--edittable` mode:
 ```sh
