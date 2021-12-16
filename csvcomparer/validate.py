@@ -1,17 +1,30 @@
+import logging
 import sys
+import pandas as pd
 
 
 class Validator:
-    def __init__(self, comparison, results):
-        self.comparison = comparison
-        self.results = results
+    def __init__(self, diff: pd.Series, threshold: float) -> None:
+        self.diff = diff
+        self.threshold = threshold
 
-    def validate(self):
-        print(f'Threshold factor: {self.comparison.threshold}\n')
+    def _filter_null_results(self) -> list:
+        return list(filter(pd.notnull, self.diff))
 
-        if all(result <= self.comparison.threshold for result in self.results.array):
+    def _all_results_below_threshold(self, results) -> bool:
+        return all(result <= self.threshold for result in results)
+
+    def _any_result_above_threshold(self, results) -> bool:
+        return any(result > self.threshold for result in results)
+
+    def validate(self) -> None:
+        logging.info(f'Allowed threshold: {self.threshold}\n')
+
+        filtered_results = self._filter_null_results()
+
+        if self._all_results_below_threshold(filtered_results):
             sys.exit()
-        elif any(result > self.comparison.threshold for result in self.results.array):
+        elif self._any_result_above_threshold(filtered_results):
             sys.exit('Some of the requests are above the given threshold factor!')
         else:
             sys.exit('An error occurred!')

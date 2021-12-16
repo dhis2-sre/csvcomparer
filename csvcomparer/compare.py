@@ -1,30 +1,51 @@
+import logging
+import os.path
 import pandas as pd
 
 
 class Comparer:
-    percentage_format = '{:+.2f}%'
-
-    def __init__(self, previous, current, threshold):
-        self.previous = previous
-        self.current = current
+    def __init__(self, threshold: float, current_report: str, previous_reports: str) -> None:
         self.threshold = threshold
+        self.current_report = current_report
+        self.previous_reports = previous_reports
         self.tables = []
+        self.file_prefix = None
+        self.aggregated_results = None
 
-    def compare(self, column_name):
-        new_df = pd.read_csv(self.current)
-        old_df = pd.read_csv(self.previous)
+        pd.set_option('precision', 2)
 
-        merged_df = pd.merge(new_df, old_df, on=['Type', 'Name'], how='outer', suffixes=('_new', '_old'))
-        compared_columns = merged_df[['Type', 'Name', f'{column_name}_old', f'{column_name}_new']]
-        diff = ((compared_columns[f'{column_name}_new'] / compared_columns[f'{column_name}_old']) * 100) - 100
+    def _build_comparison_tables(self, report_name: str, column_name: str) -> None:
+        previous_df = pd.read_csv(report_name)
 
-        compared_columns.insert(len(compared_columns.columns), 'Diff', diff)
-        results = compared_columns.style.format({'Diff': self.percentage_format.format})
-        results.applymap(lambda x: 'color: red' if (x > self.threshold) else None, subset='Diff')
-        self.tables.append(dict(title=column_name, body=results.render()))
+        self.file_prefix = os.path.basename(report_name).split('_')[0].capitalize()
 
-        comparison_table_string = compared_columns.to_string(formatters={"Diff": self.percentage_format.format})
+        self.aggregated_results.insert(
+            len(self.aggregated_results.columns),
+            self.file_prefix,
+            previous_df[column_name]
+        )
 
-        print(f'Comparison for {column_name} column:\n {comparison_table_string}\n\n')
+    def get_comparison_tables(self) -> list[dict]:
+        return self.tables
 
-        return diff.add_prefix(f'({column_name})_')
+    def compare(self, column_name: str) -> None:
+        current_df = pd.read_csv(self.current_report)
+
+        self.aggregated_results = current_df[['Type', 'Name', column_name]].rename(
+            columns={f'{column_name}': 'Current'}
+        )
+
+        aggregated_diff = pd.Series(dtype=float)
+
+        for report_name in self.previous_reports:
+            self._build_comparison_tables(report_name, column_name)
+
+            diff = ((self.aggregated_results['Current'] / self.aggregated_results[self.file_prefix]) * 100) - 100
+            aggregated_diff = aggregated_diff.append(diff)
+            self.aggregated_results.insert(len(self.aggregated_results.columns), f'{self.file_prefix} Diff', diff)
+
+        self.tables.append(dict(title=column_name, body=self.aggregated_results))
+
+        logging.info(f'Comparison for {column_name} column:\n {self.aggregated_results.to_string()}\n\n')
+
+        return aggregated_diff

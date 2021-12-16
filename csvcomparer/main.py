@@ -1,28 +1,36 @@
-"""
-TODO:
--
-"""
-
 import argparse
+import logging
 import pandas as pd
+
 from .compare import Comparer
 from .validate import Validator
 from .report import Reporter
 
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='Compare previous Locust run csv report with the current one.'
     )
 
     parser.add_argument(
-        'previous',
-        help='Previous csv report file to compare to.'
+        '--loglevel',
+        default='error',
+        help='Logging level. (default: %(default)s)'
     )
 
     parser.add_argument(
-        'current',
-        help='Current csv report file to compare with.'
+        '--current',
+        required=True,
+        type=str,
+        help='Current csv report file name to compare with.'
+    )
+
+    parser.add_argument(
+        '--previous',
+        nargs='+',
+        required=True,
+        type=str,
+        help='Previous csv report file name/s to compare to, prefixed with a "string_". (ex. baseline_stats.csv)'
     )
 
     parser.add_argument(
@@ -36,8 +44,8 @@ def main():
         '--threshold',
         required=False,
         type=float,
-        default=1.0,
-        help='The allowed threshold factor of difference (default: %(default)s).'
+        default=0,
+        help='The allowed threshold percentage of difference. (default: %(default)s)'
     )
 
     parser.add_argument(
@@ -45,21 +53,25 @@ def main():
         required=False,
         type=str,
         default='comparison-report.html',
-        help='HTML report file name (default: %(default)s).'
+        help='HTML report file name. (default: %(default)s)'
     )
 
     args = parser.parse_args()
 
-    comparer = Comparer(args.previous, args.current, args.threshold)
-    diff = pd.Series([], dtype=float)
+    logging.basicConfig(format='%(levelname)s:\n%(message)s', level=args.loglevel.upper())
+
+    comparer = Comparer(args.threshold, args.current, args.previous)
+    diff = pd.Series(dtype=float)
 
     for column in args.column_name.split(';'):
         diff = diff.append(comparer.compare(column))
 
-    reporter = Reporter(comparer, args.output)
+    comparison_tables = comparer.get_comparison_tables()
+
+    reporter = Reporter(comparison_tables, args.threshold, args.output)
     reporter.render()
 
-    validator = Validator(comparer, diff)
+    validator = Validator(diff, args.threshold)
     validator.validate()
 
 
