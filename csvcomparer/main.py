@@ -37,7 +37,7 @@ def main() -> None:
         '--column-name',
         required=True,
         type=str,
-        help='Name of column/s to use for comparison. Can be a semicolon separated list.'
+        help='Name of column/s to use for comparison. Can be a comma-separated list.'
     )
 
     parser.add_argument(
@@ -63,7 +63,7 @@ def main() -> None:
     comparer = Comparer(args.threshold, args.current, args.previous)
     diff = pd.Series(dtype=float)
 
-    for column in args.column_name.split(';'):
+    for column in args.column_name.split(','):
         diff = diff.append(comparer.compare(column))
 
     comparison_tables = comparer.get_comparison_tables()
