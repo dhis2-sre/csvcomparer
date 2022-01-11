@@ -31,7 +31,7 @@ csvcomparer \
 csvcomparer \
 --current data/dhis_stats.csv \
 --previous data/baseline_dhis_stats.csv data/previous_dhis_stats.csv \
---column-name '90%;Average Response Time' \
+--column-name 'Average Response Time,90%' \
 --threshold 15
 ```
 
