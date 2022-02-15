@@ -14,7 +14,7 @@ class Comparer:
         self.file_prefix = None
         self.aggregated_results = None
 
-        pd.set_option('precision', 2)
+        pd.set_option('display.precision', 2)
 
     def _build_comparison_tables(self, report_name: str, column_name: str) -> None:
         previous_df = pd.read_csv(report_name)
