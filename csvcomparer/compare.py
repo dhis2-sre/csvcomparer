@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import logging
 import os.path
+import sys
+
 import pandas as pd
 
 
@@ -13,18 +15,25 @@ class Comparer:
         self.tables = []
         self.file_prefix = None
         self.aggregated_results = None
+        self.previous_df = None
+        self.index = ['Name', 'Type']
 
         pd.set_option('display.precision', 2)
 
     def _build_comparison_tables(self, report_name: str, column_name: str) -> None:
-        previous_df = pd.read_csv(report_name)
+        self.previous_df = pd.read_csv(report_name)
 
         self.file_prefix = os.path.basename(report_name).split('_')[0].capitalize()
 
         self.aggregated_results.insert(
             len(self.aggregated_results.columns),
             self.file_prefix,
-            previous_df[column_name]
+            self.previous_df[column_name]
+        )
+
+    def _indexes_equal(self, left, right):
+        return left.set_index(self.index).index.equals(
+            right.set_index(self.index).index
         )
 
     def get_comparison_tables(self) -> list[dict]:
@@ -41,6 +50,10 @@ class Comparer:
 
         for report_name in self.previous_reports:
             self._build_comparison_tables(report_name, column_name)
+
+            if not self._indexes_equal(current_df, self.previous_df):
+                logging.error(f'The Current and {self.file_prefix} reports indexes ({self.index}) are not equal.')
+                continue
 
             diff = ((self.aggregated_results['Current'] / self.aggregated_results[self.file_prefix]) * 100) - 100
             aggregated_diff = aggregated_diff.append(diff)
