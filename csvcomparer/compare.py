@@ -8,6 +8,9 @@ import pandas as pd
 
 
 class Comparer:
+
+    reports_index = ['Name', 'Type']
+
     def __init__(self, threshold: float, current_report: str, previous_reports: str) -> None:
         self.threshold = threshold
         self.current_report = current_report
@@ -16,7 +19,6 @@ class Comparer:
         self.file_prefix = None
         self.aggregated_results = None
         self.previous_df = None
-        self.index = ['Name', 'Type']
 
         pd.set_option('display.precision', 2)
 
@@ -31,9 +33,9 @@ class Comparer:
             self.previous_df[column_name]
         )
 
-    def _indexes_equal(self, left, right):
-        return left.set_index(self.index).index.equals(
-            right.set_index(self.index).index
+    def _indexes_equal(self, left: pd.DataFrame, right: pd.DataFrame) -> bool:
+        return left.set_index(self.reports_index).index.equals(
+            right.set_index(self.reports_index).index
         )
 
     def get_comparison_tables(self) -> list[dict]:
@@ -52,7 +54,7 @@ class Comparer:
             self._build_comparison_tables(report_name, column_name)
 
             if not self._indexes_equal(current_df, self.previous_df):
-                logging.error(f'The Current and {self.file_prefix} reports indexes ({self.index}) are not equal.')
+                logging.error(f'The Current and {self.file_prefix} reports indexes ({self.reports_index}) are not equal.')
                 continue
 
             diff = ((self.aggregated_results['Current'] / self.aggregated_results[self.file_prefix]) * 100) - 100
