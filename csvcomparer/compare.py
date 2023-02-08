@@ -23,10 +23,6 @@ class Comparer:
         pd.set_option('display.precision', 2)
 
     def _build_comparison_tables(self, report_name: str, column_name: str) -> None:
-        self.previous_df = pd.read_csv(report_name)
-
-        self.file_prefix = os.path.basename(report_name).split('_')[0].capitalize()
-
         self.aggregated_results.insert(
             len(self.aggregated_results.columns),
             self.file_prefix,
@@ -51,11 +47,14 @@ class Comparer:
         aggregated_diff = pd.Series(dtype=float)
 
         for report_name in self.previous_reports:
-            self._build_comparison_tables(report_name, column_name)
+            self.previous_df = pd.read_csv(report_name)
+            self.file_prefix = os.path.basename(report_name).split('_')[0].capitalize()
 
             if not self._indexes_equal(current_df, self.previous_df):
                 logging.error(f'The Current and {self.file_prefix} reports indexes ({self.reports_index}) are not equal.')
                 continue
+
+            self._build_comparison_tables(report_name, column_name)
 
             diff = ((self.aggregated_results['Current'] / self.aggregated_results[self.file_prefix]) * 100) - 100
             aggregated_diff = aggregated_diff.append(diff)
